@@ -72,7 +72,7 @@ namespace ApplesGame
 		game.menuText.setPosition(SCREEN_WIDTH / 2.f - 100.f, 100.f);
 
 		game.menuText.setFont(game.font);
-		game.menuText.setString("Select the game mode! Use the numpad. ESC to quit the game.");
+		game.menuText.setString("Use the numpad to select game modes (toggle with 1-4). ENTER to start. ESC to quit.");
 		game.menuText.setCharacterSize(24);
 		game.menuText.setFillColor(sf::Color::White);
 		game.menuText.setPosition(15.f, 10.f);
@@ -103,11 +103,7 @@ namespace ApplesGame
 				case sf::Keyboard::Num1:
 				case sf::Keyboard::Numpad1:
 				{
-					uint32_t flags = 0;
-					flags |= static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration);
-					SetGameMode(game, flags);
-					game.state = GameState::Playing;
-					RestartGame(game);
+					game.gameMode ^= static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration);
 					break;
 				}
 
@@ -115,11 +111,7 @@ namespace ApplesGame
 				case sf::Keyboard::Num2:
 				case sf::Keyboard::Numpad2:
 				{
-					uint32_t flags = 0;
-					flags |= static_cast<uint32_t>(GameSettingsBits::IsGameInfinite);
-					SetGameMode(game, flags);
-					game.state = GameState::Playing;
-					RestartGame(game);
+					game.gameMode ^= static_cast<uint32_t>(GameSettingsBits::IsGameInfinite);
 					break;
 				}
 				
@@ -127,11 +119,7 @@ namespace ApplesGame
 				case sf::Keyboard::Num3:
 				case sf::Keyboard::Numpad3:
 				{
-					uint32_t flags = 0;
-					flags |= static_cast<uint32_t>(GameSettingsBits::IsHardcoreMode);
-					SetGameMode(game, flags);
-					game.state = GameState::Playing;
-					RestartGame(game);
+					game.gameMode ^= static_cast<uint32_t>(GameSettingsBits::IsHardcoreMode);
 					break;
 				}
 
@@ -139,11 +127,18 @@ namespace ApplesGame
 				case sf::Keyboard::Num4:
 				case sf::Keyboard::Numpad4:
 				{
-					uint32_t flags = 0;
-					flags |= static_cast<uint32_t>(GameSettingsBits::IsZenMode);
-					SetGameMode(game, flags);
-					game.state = GameState::Playing;
-					RestartGame(game);
+					game.gameMode ^= static_cast<uint32_t>(GameSettingsBits::IsZenMode);
+					break;
+				}
+
+				case sf::Keyboard::Enter:
+				{
+					if (game.gameMode != 0)
+					{
+						SetGameMode(game, game.gameMode);
+						game.state = GameState::Playing;
+						RestartGame(game);
+					}
 					break;
 				}
 			}
@@ -152,46 +147,17 @@ namespace ApplesGame
 
 	void SetGameMode(Game& game, uint32_t flags)
 	{
-		game.gameMode = flags;
+		game.gameMode |= flags;
 
 		// Acceleration ON
 		if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration))
 		{
-			//check apples collision 
-			for (int i = 0; i < game.numApples; ++i)
-			{
-				if (IsCirclesCollide(game.player.position, PLAYER_SIZE / 2.f,
-					game.apples[i].position, APPLE_SIZE / 2.f))
-				{
-					//game.apples[i].position = GetRandomPositionInScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
-
-					game.apples.erase(game.apples.begin() + i);
-					game.numApples--;
-					i--;
-
-					++game.numEatenApples;
-					game.player.speed += ACCELERATION;
-					game.score++;
-					game.scoreText.setString("Score: " + std::to_string(game.score));
-				}
-			}
+			
 		}
 		// Infinite ON
 		if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameInfinite))
 		{
-			//check apples collision 
-			for (int i = 0; i < game.numApples; ++i)
-			{
-				if (IsCirclesCollide(game.player.position, PLAYER_SIZE / 2.f,
-					game.apples[i].position, APPLE_SIZE / 2.f))
-				{
-					game.apples[i].position = GetRandomPositionInScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
-
-					++game.numEatenApples;
-					game.score++;
-					game.scoreText.setString("Score: " + std::to_string(game.score));
-				}
-			}
+			game.numApples = MAX_APPLES;
 		}
 
 		// Hardcore ON
@@ -601,7 +567,7 @@ namespace ApplesGame
 				}
 				return;
 			}
-			if (!(game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameInfinite)) 
+			if (!(game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameInfinite))
 				&& game.apples.empty() && game.state == GameState::Victory)
 			{
 				//game.state = GameState::Victory;
@@ -675,6 +641,20 @@ namespace ApplesGame
 				window.draw(game.menuItems[i]);
 			}
 			window.draw(game.menuText);
+
+			const uint32_t bits[4] = {
+				static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration),
+				static_cast<uint32_t>(GameSettingsBits::IsGameInfinite),
+				static_cast<uint32_t>(GameSettingsBits::IsHardcoreMode),
+				static_cast<uint32_t>(GameSettingsBits::IsZenMode),
+			};
+
+			for (int i = 0; i < 4; ++i)
+			{
+				bool selected = (game.gameMode & bits[i]) != 0;
+				game.menuItems[i].setFillColor(selected ? sf::Color::Yellow : sf::Color::White);
+				window.draw(game.menuItems[i]);
+			}
 			return;
 		}
 
