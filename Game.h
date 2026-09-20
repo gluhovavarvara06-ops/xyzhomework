@@ -42,7 +42,6 @@ namespace ApplesGame
 		float timeSinceGameFinished = 0.f;
 		sf::RectangleShape background;
 
-		
 		int numApples;
 		int numStones;
 
