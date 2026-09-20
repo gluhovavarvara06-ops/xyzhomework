@@ -3,19 +3,19 @@
 
 namespace ApplesGame
 {
-	const std::string RESOURCES_PATH = "Resources/"; //константа верхним регистром для удобства понимания, что это НЕ переменная
+	const std::string RESOURCES_PATH = "Resources/"; //ГЄГ®Г­Г±ГІГ Г­ГІГ  ГўГҐГ°ГµГ­ГЁГ¬ Г°ГҐГЈГЁГ±ГІГ°Г®Г¬ Г¤Г«Гї ГіГ¤Г®ГЎГ±ГІГўГ  ГЇГ®Г­ГЁГ¬Г Г­ГЁГї, Г·ГІГ® ГЅГІГ® ГЌГ… ГЇГҐГ°ГҐГ¬ГҐГ­Г­Г Гї
 	const int SCREEN_WIDTH = 800;
 	const int SCREEN_HEIGHT = 600;
-	const float INITIAL_SPEED = 100.f; //движение в пикселях в секунду, без прописания времени - за кадр
+	const float INITIAL_SPEED = 100.f; //Г¤ГўГЁГ¦ГҐГ­ГЁГҐ Гў ГЇГЁГЄГ±ГҐГ«ГїГµ Гў Г±ГҐГЄГіГ­Г¤Гі, ГЎГҐГ§ ГЇГ°Г®ГЇГЁГ±Г Г­ГЁГї ГўГ°ГҐГ¬ГҐГ­ГЁ - Г§Г  ГЄГ Г¤Г°
 	const float PLAYER_SIZE = 20.f;
-	const float ACCELERATION = 10.f; //ускорение в секунду в пикселях в секунду
+	const float ACCELERATION = 10.f; //ГіГ±ГЄГ®Г°ГҐГ­ГЁГҐ Гў Г±ГҐГЄГіГ­Г¤Гі Гў ГЇГЁГЄГ±ГҐГ«ГїГµ Гў Г±ГҐГЄГіГ­Г¤Гі
 	//const int NUM_APPLES = 20;
 	const float APPLE_SIZE = 20.f;
 	//const int NUM_STONES = 7;
 	const float STONE_SIZE = 20.f;
 	const float PAUSE_LENGTH = 3.f;
 
-	const int MIN_APPLES = 1;
+	const int MIN_APPLES = 8;
 	const int MAX_APPLES = 30;
 
 	const int MIN_STONES = 7;
