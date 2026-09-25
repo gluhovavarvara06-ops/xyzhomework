@@ -211,7 +211,7 @@ namespace ApplesGame
 		RestartGame(game);
 	}
 
-	void UpdateGame(Game& game, float deltaTime)
+		void UpdateGame(Game& game, float deltaTime)
 	{
 		if (game.state == GameState::Menu)
 		{
@@ -260,53 +260,39 @@ namespace ApplesGame
 				break;
 			}
 
-			if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameInfinite))
+			// check apples collision
+			for (int i = 0; i < game.numApples; ++i)
 			{
-				//check apples collision 
-				for (int i = 0; i < game.numApples; ++i)
+				if (IsCirclesCollide(game.player.position, PLAYER_SIZE / 2.f,
+					game.apples[i].position, APPLE_SIZE / 2.f))
 				{
-					if (IsCirclesCollide(game.player.position, PLAYER_SIZE / 2.f,
-						game.apples[i].position, APPLE_SIZE / 2.f))
+					++game.numEatenApples;
+					game.score++;
+					game.scoreText.setString("Score: " + std::to_string(game.score));
+
+					if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameInfinite))
 					{
 						game.apples[i].position = GetRandomPositionInScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
-
-						++game.numEatenApples;
-						game.score++;
-						game.scoreText.setString("Score: " + std::to_string(game.score));
-
-						if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration))
-						{
-							game.player.speed += ACCELERATION;
-						}
 					}
-				}
-
-				//check stones collision
-				for (int i = 0; i < game.numStones; ++i)
-				{
-					if (IsRectanglesCollide(game.player.position, { PLAYER_SIZE, PLAYER_SIZE },
-						game.stones[i].position, { STONE_SIZE, STONE_SIZE }))
+					else
 					{
-						game.state = GameState::GameOver;
-						game.isGameFinished = true;
-						game.timeSinceGameFinished = 0.f;
+						game.apples.erase(game.apples.begin() + i);
+						game.numApples--;
+						i--;
+					}
 
-						if (game.timeSinceGameFinished > PAUSE_LENGTH)
-						{
-							game.state = GameState::Menu;
-							game.selectedMenuItem = 0;
-							GameMenu(game);
-						}
-
-						return;
+					if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration))
+					{
+						game.player.speed += ACCELERATION;
 					}
 				}
+			}
 
-				// Check screen borders collision
-				if (game.player.position.x - PLAYER_SIZE / 2.f < 0.f ||
-					game.player.position.x + PLAYER_SIZE / 2.f > SCREEN_WIDTH ||
-					game.player.position.y - PLAYER_SIZE / 2.f < 0.f ||
-					game.player.position.y + PLAYER_SIZE / 2.f > SCREEN_HEIGHT)
+			//check stones collision
+			for (int i = 0; i < game.numStones; ++i)
+			{
+				if (IsRectanglesCollide(game.player.position, { PLAYER_SIZE, PLAYER_SIZE },
+					game.stones[i].position, { STONE_SIZE, STONE_SIZE }))
 				{
 					game.state = GameState::GameOver;
 					game.isGameFinished = true;
@@ -323,24 +309,28 @@ namespace ApplesGame
 				}
 			}
 
+			// Check screen borders collision
+			if (game.player.position.x - PLAYER_SIZE / 2.f < 0.f ||
+				game.player.position.x + PLAYER_SIZE / 2.f > SCREEN_WIDTH ||
+				game.player.position.y - PLAYER_SIZE / 2.f < 0.f ||
+				game.player.position.y + PLAYER_SIZE / 2.f > SCREEN_HEIGHT)
+			{
+				game.state = GameState::GameOver;
+				game.isGameFinished = true;
+				game.timeSinceGameFinished = 0.f;
+
+				if (game.timeSinceGameFinished > PAUSE_LENGTH)
+				{
+					game.state = GameState::Menu;
+					game.selectedMenuItem = 0;
+					GameMenu(game);
+				}
+
+				return;
+			}
+
 			if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration))
 			{
-				//check apples collision 
-				for (int i = 0; i < game.numApples; ++i)
-				{
-					if (IsCirclesCollide(game.player.position, PLAYER_SIZE / 2.f,
-						game.apples[i].position, APPLE_SIZE / 2.f))
-					{
-						game.apples.erase(game.apples.begin() + i);
-						game.numApples--;
-						i--;
-
-						++game.numEatenApples;
-						game.player.speed += ACCELERATION;
-						game.score++;
-						game.scoreText.setString("Score: " + std::to_string(game.score));
-					}
-				}
 				if (game.timeSinceGameFinished <= PAUSE_LENGTH && game.numApples == 0)
 				{
 					game.state = GameState::Victory;
@@ -354,47 +344,6 @@ namespace ApplesGame
 					game.Victorytext.setCharacterSize(72);
 					game.Victorytext.setFillColor(sf::Color::Yellow);
 					game.Victorytext.setPosition(SCREEN_WIDTH / 3.f, SCREEN_HEIGHT / 2.8f);
-
-					if (game.timeSinceGameFinished > PAUSE_LENGTH)
-					{
-						game.state = GameState::Menu;
-						game.selectedMenuItem = 0;
-						GameMenu(game);
-					}
-									
-					return;
-				}
-
-				//check stones collision
-				for (int i = 0; i < game.numStones; ++i)
-				{
-					if (IsRectanglesCollide(game.player.position, { PLAYER_SIZE, PLAYER_SIZE },
-						game.stones[i].position, { STONE_SIZE, STONE_SIZE }))
-					{
-						game.state = GameState::GameOver;
-						game.isGameFinished = true;
-						game.timeSinceGameFinished = 0.f;
-
-						if (game.timeSinceGameFinished > PAUSE_LENGTH)
-						{
-							game.state = GameState::Menu;
-							game.selectedMenuItem = 0;
-							GameMenu(game);
-						}
-
-						return;
-					}
-				}
-
-				// Check screen borders collision
-				if (game.player.position.x - PLAYER_SIZE / 2.f < 0.f ||
-					game.player.position.x + PLAYER_SIZE / 2.f > SCREEN_WIDTH ||
-					game.player.position.y - PLAYER_SIZE / 2.f < 0.f ||
-					game.player.position.y + PLAYER_SIZE / 2.f > SCREEN_HEIGHT)
-				{
-					game.state = GameState::GameOver;
-					game.isGameFinished = true;
-					game.timeSinceGameFinished = 0.f;
 
 					if (game.timeSinceGameFinished > PAUSE_LENGTH)
 					{
@@ -411,22 +360,6 @@ namespace ApplesGame
 			if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsHardcoreMode))
 			{
 				game.numStones = 20;
-				//check apples collision 
-				for (int i = 0; i < game.numApples; ++i)
-				{
-					if (IsCirclesCollide(game.player.position, PLAYER_SIZE / 2.f,
-						game.apples[i].position, APPLE_SIZE / 2.f))
-					{
-						game.apples.erase(game.apples.begin() + i);
-						game.numApples--;
-						i--;
-
-						++game.numEatenApples;
-						//game.player.speed += ACCELERATION;
-						game.score++;
-						game.scoreText.setString("Score: " + std::to_string(game.score));
-					}
-				}
 				if (game.timeSinceGameFinished <= PAUSE_LENGTH && game.numApples == 0)
 				{
 					game.state = GameState::Victory;
@@ -451,88 +384,11 @@ namespace ApplesGame
 					return;
 				}
 
-				//check stones collision
-				for (int i = 0; i < game.numStones; ++i)
-				{
-					if (IsRectanglesCollide(game.player.position, { PLAYER_SIZE, PLAYER_SIZE },
-						game.stones[i].position, { STONE_SIZE, STONE_SIZE }))
-					{
-						game.state = GameState::GameOver;
-						game.isGameFinished = true;
-						game.timeSinceGameFinished = 0.f;
-
-						if (game.timeSinceGameFinished > PAUSE_LENGTH)
-						{
-							game.state = GameState::Menu;
-							game.selectedMenuItem = 0;
-							GameMenu(game);
-						}
-
-						return;
-					}
-				}
-
-				// Check screen borders collision
-				if (game.player.position.x - PLAYER_SIZE / 2.f < 0.f ||
-					game.player.position.x + PLAYER_SIZE / 2.f > SCREEN_WIDTH ||
-					game.player.position.y - PLAYER_SIZE / 2.f < 0.f ||
-					game.player.position.y + PLAYER_SIZE / 2.f > SCREEN_HEIGHT)
-				{
-					game.state = GameState::GameOver;
-					game.isGameFinished = true;
-					game.timeSinceGameFinished = 0.f;
-
-					if (game.timeSinceGameFinished > PAUSE_LENGTH)
-					{
-						game.state = GameState::Menu;
-						game.selectedMenuItem = 0;
-						GameMenu(game);
-					}
-
-					return;
-				}
-
 			}
 
 			if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsZenMode))
 			{
 				game.numStones = 0;
-
-				for (int i = 0; i < game.numApples; ++i)
-				{
-					if (IsCirclesCollide(game.player.position, PLAYER_SIZE / 2.f,
-						game.apples[i].position, APPLE_SIZE / 2.f))
-					{
-						game.apples[i].position = GetRandomPositionInScreen(SCREEN_WIDTH, SCREEN_HEIGHT);
-
-						game.apples.erase(game.apples.begin() + i);
-						game.numApples--;
-						i--;
-
-						++game.numEatenApples;
-						game.score++;
-						game.scoreText.setString("Score: " + std::to_string(game.score));
-					}
-				}
-
-				// Check screen borders collision
-				if (game.player.position.x - PLAYER_SIZE / 2.f < 0.f ||
-					game.player.position.x + PLAYER_SIZE / 2.f > SCREEN_WIDTH ||
-					game.player.position.y - PLAYER_SIZE / 2.f < 0.f ||
-					game.player.position.y + PLAYER_SIZE / 2.f > SCREEN_HEIGHT)
-				{
-					game.state = GameState::GameOver;
-					game.isGameFinished = true;
-					game.timeSinceGameFinished = 0.f;
-
-					if (game.timeSinceGameFinished > PAUSE_LENGTH)
-					{
-						game.state = GameState::Menu;
-						game.selectedMenuItem = 0;
-						GameMenu(game);
-					}
-					return;
-				}
 				if (game.timeSinceGameFinished <= PAUSE_LENGTH && game.numApples == 0)
 				{
 					game.state = GameState::Victory;
@@ -614,7 +470,6 @@ namespace ApplesGame
 			return;
 		}
 	}
-
 	void DrawGame(Game& game, sf::RenderWindow& window)
 	{
 		//Draw game
