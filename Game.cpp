@@ -1,5 +1,6 @@
 #include "Game.h"
 #include <cassert>
+#include <algorithm>
 
 namespace ApplesGame
 {
@@ -134,7 +135,7 @@ namespace ApplesGame
 					game.gameMode ^= static_cast<uint32_t>(GameSettingsBits::IsZenMode);
 					if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsZenMode))
 					{
-					game.gameMode &= ~static_cast<uint32_t>(GameSettingsBits::IsHardcoreMode);
+						game.gameMode &= ~static_cast<uint32_t>(GameSettingsBits::IsHardcoreMode);
 					}
 					break;
 				}
@@ -160,7 +161,21 @@ namespace ApplesGame
 		// Acceleration ON
 		if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration))
 		{
-			
+			for (int i = 0; i < game.numApples; ++i)
+			{
+				if (IsCirclesCollide(game.player.position, PLAYER_SIZE / 2.f,
+					game.apples[i].position, APPLE_SIZE / 2.f))
+				{
+					game.apples.erase(game.apples.begin() + i);
+					game.numApples--;
+					i--;
+
+					++game.numEatenApples;
+					game.player.speed += ACCELERATION;
+					game.score++;
+					game.scoreText.setString("Score: " + std::to_string(game.score));
+				}
+			}
 		}
 		// Infinite ON
 		if (game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameInfinite))
@@ -184,9 +199,6 @@ namespace ApplesGame
 
 	void InitGame(Game& game)
 	{
-		//game.gameMode |= static_cast<uint32_t>(GameSettingsBits::IsGameInfinite);
-		//game.gameMode |= static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration);
-
 		assert(game.playerTexture.loadFromFile(RESOURCES_PATH + "\\Player.png"));
 		assert(game.appleTexture.loadFromFile(RESOURCES_PATH + "\\Apple.png"));
 		assert(game.stoneTexture.loadFromFile(RESOURCES_PATH + "\\Rock.png"));
@@ -211,11 +223,11 @@ namespace ApplesGame
 		RestartGame(game);
 	}
 
-		void UpdateGame(Game& game, float deltaTime)
+	void UpdateGame(Game& game, float deltaTime)
 	{
 		if (game.state == GameState::Menu)
 		{
-			return; 
+			return;
 		}
 
 		//Update game state
@@ -297,14 +309,6 @@ namespace ApplesGame
 					game.state = GameState::GameOver;
 					game.isGameFinished = true;
 					game.timeSinceGameFinished = 0.f;
-
-					if (game.timeSinceGameFinished > PAUSE_LENGTH)
-					{
-						game.state = GameState::Menu;
-						game.selectedMenuItem = 0;
-						GameMenu(game);
-					}
-
 					return;
 				}
 			}
@@ -318,14 +322,6 @@ namespace ApplesGame
 				game.state = GameState::GameOver;
 				game.isGameFinished = true;
 				game.timeSinceGameFinished = 0.f;
-
-				if (game.timeSinceGameFinished > PAUSE_LENGTH)
-				{
-					game.state = GameState::Menu;
-					game.selectedMenuItem = 0;
-					GameMenu(game);
-				}
-
 				return;
 			}
 
@@ -344,14 +340,6 @@ namespace ApplesGame
 					game.Victorytext.setCharacterSize(72);
 					game.Victorytext.setFillColor(sf::Color::Yellow);
 					game.Victorytext.setPosition(SCREEN_WIDTH / 3.f, SCREEN_HEIGHT / 2.8f);
-
-					if (game.timeSinceGameFinished > PAUSE_LENGTH)
-					{
-						game.state = GameState::Menu;
-						game.selectedMenuItem = 0;
-						GameMenu(game);
-					}
-
 					return;
 				}
 
@@ -373,14 +361,6 @@ namespace ApplesGame
 					game.Victorytext.setCharacterSize(72);
 					game.Victorytext.setFillColor(sf::Color::Yellow);
 					game.Victorytext.setPosition(SCREEN_WIDTH / 3.f, SCREEN_HEIGHT / 2.8f);
-
-					if (game.timeSinceGameFinished > PAUSE_LENGTH)
-					{
-						game.state = GameState::Menu;
-						game.selectedMenuItem = 0;
-						GameMenu(game);
-					}
-
 					return;
 				}
 
@@ -401,14 +381,6 @@ namespace ApplesGame
 					game.Victorytext.setCharacterSize(72);
 					game.Victorytext.setFillColor(sf::Color::Yellow);
 					game.Victorytext.setPosition(SCREEN_WIDTH / 3.f, SCREEN_HEIGHT / 2.8f);
-
-					if (game.timeSinceGameFinished > PAUSE_LENGTH)
-					{
-						game.state = GameState::Menu;
-						game.selectedMenuItem = 0;
-						GameMenu(game);
-					}
-
 					return;
 				}
 			}
@@ -420,26 +392,26 @@ namespace ApplesGame
 			{
 				game.timeSinceGameFinished += deltaTime;
 				game.background.setFillColor(sf::Color::Red);
-				
+
 				game.GameOvertext.setFont(game.font);
 				game.GameOvertext.setString("Game Over!");
 				game.GameOvertext.setCharacterSize(72);
 				game.GameOvertext.setFillColor(sf::Color::Yellow);
-				
+
 				game.GameOvertext.setPosition(SCREEN_WIDTH / 3.f, SCREEN_HEIGHT / 2.8f);
 
 				if (game.timeSinceGameFinished > PAUSE_LENGTH)
 				{
-					game.state = GameState::Menu;
-					game.selectedMenuItem = 0;
-					GameMenu(game);
+					game.state = GameState::Leaderboard;
+					game.timeSinceGameFinished = 0.f;
+					GameLeaderboard(game);
 				}
+
 				return;
 			}
 			if (!(game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameInfinite))
 				&& game.apples.empty() && game.state == GameState::Victory)
 			{
-				//game.state = GameState::Victory;
 				game.isGameFinished = true;
 				game.isGameWon = true;
 				game.timeSinceGameFinished += deltaTime;
@@ -455,6 +427,20 @@ namespace ApplesGame
 
 				if (game.timeSinceGameFinished > PAUSE_LENGTH)
 				{
+					game.state = GameState::Leaderboard;
+					game.timeSinceGameFinished = 0.f;
+					GameLeaderboard(game);
+				}
+
+				return;
+			}
+
+			if (game.state == GameState::Leaderboard)
+			{
+				game.timeSinceGameFinished += deltaTime;
+				game.background.setFillColor(sf::Color::Black);
+				if (game.timeSinceGameFinished > PAUSE_LENGTH)
+				{
 					game.state = GameState::Menu;
 					game.selectedMenuItem = 0;
 					GameMenu(game);
@@ -462,14 +448,54 @@ namespace ApplesGame
 				return;
 			}
 		}
-		if (game.timeSinceGameFinished > PAUSE_LENGTH)
-		{
-			game.state = GameState::Menu;
-			game.selectedMenuItem = 0;
-			GameMenu(game);
-			return;
-		}
 	}
+
+	void GameLeaderboard(Game& game)
+	{
+		game.leaderboard["Player"] = game.score;
+
+		std::vector<Record> sorted;
+		sorted.reserve(game.leaderboard.size());
+
+		for (const auto& pair : game.leaderboard)
+		{
+			Record r;
+			r.name = pair.first;
+			r.score = pair.second;
+			sorted.push_back(r);
+		}
+
+		//insert sort
+		for (size_t i = 1; i < sorted.size(); ++i)
+		{
+			Record key = sorted[i];
+			int j = static_cast<int>(i) - 1;
+
+			while (j >= 0 && sorted[j].score < key.score)
+			{
+				sorted[j + 1] = sorted[j];
+				--j;
+			}
+			sorted[j + 1] = key;
+		}
+
+		std::string text = "===== LEADERBOARD =====\n";
+		for (size_t i = 0; i < sorted.size(); ++i)
+		{
+			text += std::to_string(i + 1) + ". "
+				+ sorted[i].name
+				+ " ......... "
+				+ std::to_string(sorted[i].score) + "\n";
+		}
+		text += "=======================";
+
+		game.leaderboardText.setFont(game.font);
+		game.leaderboardText.setString(text);
+		game.leaderboardText.setCharacterSize(26);
+		game.leaderboardText.setFillColor(sf::Color::White);
+		game.leaderboardText.setPosition(SCREEN_WIDTH / 2.f - 200.f, 80.f);
+	};
+
 	void DrawGame(Game& game, sf::RenderWindow& window)
 	{
 		//Draw game
@@ -498,6 +524,13 @@ namespace ApplesGame
 		if (game.timeSinceGameFinished <= PAUSE_LENGTH && game.state == GameState::Victory)
 		{
 			window.draw(game.Victorytext);
+		}
+
+		if (game.state == GameState::Leaderboard)
+		{
+			window.draw(game.leaderboardTitle);
+			window.draw(game.leaderboardText);
+			return;
 		}
 
 		if (game.state == GameState::Menu)
