@@ -14,7 +14,8 @@ namespace ApplesGame
 		Menu,
 		Playing,
 		GameOver,
-		Victory
+		Victory,
+		Leaderboard
 	};
 
 	enum class GameSettingsBits
@@ -23,6 +24,12 @@ namespace ApplesGame
 		IsGameWithAcceleration = 1 << 1,
 		IsHardcoreMode = 1 << 2,
 		IsZenMode = 1 << 3,
+	};
+
+	struct Record
+	{
+		std::string name;
+		int score;
 	};
 
 	struct Game
@@ -35,6 +42,16 @@ namespace ApplesGame
 
 		uint32_t gameMode = 0;
 
+		sf::Text leaderboardTitle;
+		sf::Text leaderboardText;
+		std::map<std::string, int> leaderboard = {
+			{"Mark",  120},
+			{"Bob",    89},
+			{"Carol",  67},
+			{"Dave",   52},
+			{"Alice",  42}
+		};
+
 		//Global game data
 		int numEatenApples = 0;
 		bool isGameFinished = false;
@@ -46,8 +63,6 @@ namespace ApplesGame
 		int numStones;
 
 		Player player;
-		//Apple apples[NUM_APPLES];
-		//Stone stones[NUM_STONES];
 		std::vector<Apple> apples;
 		std::vector<Stone> stones;
 
@@ -65,10 +80,14 @@ namespace ApplesGame
 
 	};
 
+	
+
 	void RestartGame(Game& game);
 	void GameMenu(Game& game);
 	void ProcessMenuInput(Game& game, sf::Event& event);
 	void SetGameMode(Game& game, uint32_t flags);
+
+	void GameLeaderboard(Game& game);
 
 	void InitGame(Game& game);
 	void UpdateGame(Game& game, float deltaTime);
