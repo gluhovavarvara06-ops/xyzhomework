@@ -1,4 +1,5 @@
 #include "Game.h"
+#include "Leaderboard.h"
 #include <cassert>
 #include <algorithm>
 
@@ -46,7 +47,7 @@ namespace ApplesGame
 		}
 
 		game.numEatenApples = 0;
-		game.isGameFinished = false;
+		//game.isGameFinished = false;
 		game.isGameWon = false;
 		game.timeSinceGameFinished = 0.f;
 		game.score = 0;
@@ -74,9 +75,9 @@ namespace ApplesGame
 
 		game.menuText.setFont(game.font);
 		game.menuText.setString("Use the numpad to select game modes (toggle with 1-4). ENTER to start. ESC to quit.");
-		game.menuText.setCharacterSize(24);
+		game.menuText.setCharacterSize(20);
 		game.menuText.setFillColor(sf::Color::White);
-		game.menuText.setPosition(15.f, 10.f);
+		game.menuText.setPosition(10.f, 10.f);
 
 		game.menuOptions.clear();
 		game.menuOptions.push_back("1. Acceleration Mode");
@@ -231,7 +232,7 @@ namespace ApplesGame
 		}
 
 		//Update game state
-		if (!game.isGameFinished)
+		if (game.state == GameState::Playing)
 		{
 			// Handle input
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
@@ -307,7 +308,7 @@ namespace ApplesGame
 					game.stones[i].position, { STONE_SIZE, STONE_SIZE }))
 				{
 					game.state = GameState::GameOver;
-					game.isGameFinished = true;
+					//game.isGameFinished = true;
 					game.timeSinceGameFinished = 0.f;
 					return;
 				}
@@ -320,7 +321,7 @@ namespace ApplesGame
 				game.player.position.y + PLAYER_SIZE / 2.f > SCREEN_HEIGHT)
 			{
 				game.state = GameState::GameOver;
-				game.isGameFinished = true;
+				//game.isGameFinished = true;
 				game.timeSinceGameFinished = 0.f;
 				return;
 			}
@@ -331,7 +332,7 @@ namespace ApplesGame
 				{
 					game.state = GameState::Victory;
 					game.isGameWon = true;
-					game.isGameFinished = true;
+					//game.isGameFinished = true;
 					game.timeSinceGameFinished += deltaTime;
 					game.background.setFillColor(sf::Color::Green);
 
@@ -352,7 +353,7 @@ namespace ApplesGame
 				{
 					game.state = GameState::Victory;
 					game.isGameWon = true;
-					game.isGameFinished = true;
+					//game.isGameFinished = true;
 					game.timeSinceGameFinished += deltaTime;
 					game.background.setFillColor(sf::Color::Green);
 
@@ -373,7 +374,6 @@ namespace ApplesGame
 				{
 					game.state = GameState::Victory;
 					game.timeSinceGameFinished += deltaTime;
-					game.isGameFinished = true;
 					game.background.setFillColor(sf::Color::Green);
 
 					game.Victorytext.setFont(game.font);
@@ -402,9 +402,7 @@ namespace ApplesGame
 
 				if (game.timeSinceGameFinished > PAUSE_LENGTH)
 				{
-					game.state = GameState::Leaderboard;
-					game.timeSinceGameFinished = 0.f;
-					GameLeaderboard(game);
+					GameStateLeaderboard(game);
 				}
 
 				return;
@@ -412,7 +410,6 @@ namespace ApplesGame
 			if (!(game.gameMode & static_cast<uint32_t>(GameSettingsBits::IsGameInfinite))
 				&& game.apples.empty() && game.state == GameState::Victory)
 			{
-				game.isGameFinished = true;
 				game.isGameWon = true;
 				game.timeSinceGameFinished += deltaTime;
 				game.background.setFillColor(sf::Color::Green);
@@ -427,9 +424,7 @@ namespace ApplesGame
 
 				if (game.timeSinceGameFinished > PAUSE_LENGTH)
 				{
-					game.state = GameState::Leaderboard;
-					game.timeSinceGameFinished = 0.f;
-					GameLeaderboard(game);
+					GameStateLeaderboard(game);
 				}
 
 				return;
@@ -450,50 +445,89 @@ namespace ApplesGame
 		}
 	}
 
-	void GameLeaderboard(Game& game)
+	void GameStateLeaderboard(Game& game)
 	{
-		game.leaderboard["Player"] = game.score;
+		game.state = GameState::Leaderboard;
+		game.timeSinceGameFinished = 0.f;
+		GameLeaderboard(game);
+	}
 
-		std::vector<Record> sorted;
-		sorted.reserve(game.leaderboard.size());
+	void DoYouWannaEsc(Game& game, sf::Event& event)
+	{
+		assert(game.font.loadFromFile(RESOURCES_PATH + "\\Fonts\\Roboto-LightItalic.ttf"));
 
-		for (const auto& pair : game.leaderboard)
+		game.background.setSize(sf::Vector2f(SCREEN_WIDTH, SCREEN_HEIGHT));
+		game.background.setFillColor(sf::Color::Black);
+		game.background.setPosition(0.f, 0.f);
+
+		game.escText.setFont(game.font);
+		game.escText.setString("Are you sure you want to quit the game?");
+		game.escText.setCharacterSize(28);
+		game.escText.setFillColor(sf::Color::White);
+		game.escText.setPosition(SCREEN_WIDTH / 2.f - 250.f,
+									SCREEN_HEIGHT / 2.f - 150.f);
+
+		game.escOptions.clear();
+		game.escOptions.push_back("YES");
+		game.escOptions.push_back("no");
+		for (int i = 0; i < game.escOptions.size(); ++i)
 		{
-			Record r;
-			r.name = pair.first;
-			r.score = pair.second;
-			sorted.push_back(r);
-		}
+			game.escItems[i].setFont(game.font);
+			game.escItems[i].setString(game.escOptions[i]);
+			game.escItems[i].setCharacterSize(28);
 
-		//insert sort
-		for (size_t i = 1; i < sorted.size(); ++i)
-		{
-			Record key = sorted[i];
-			int j = static_cast<int>(i) - 1;
-
-			while (j >= 0 && sorted[j].score < key.score)
+			if (i == game.selectedQuitItem)
 			{
-				sorted[j + 1] = sorted[j];
-				--j;
+				game.escItems[i].setFillColor(sf::Color::Yellow);
 			}
-			sorted[j + 1] = key;
+			else
+			{
+				game.escItems[i].setFillColor(sf::Color::White);
+			}
+
+			if (i == 0)
+			{
+				game.escItems[i].setPosition(SCREEN_WIDTH / 4.f - 25.f,
+					SCREEN_HEIGHT / 2.f + 10.f);
+			}
+			else
+			{
+				game.escItems[i].setPosition(3.f * SCREEN_WIDTH / 4.f - 15.f,
+					SCREEN_HEIGHT / 2.f + 10.f);
+			}
 		}
 
-		std::string text = "===== LEADERBOARD =====\n";
-		for (size_t i = 0; i < sorted.size(); ++i)
+		game.selectedQuitItem = 0;
+	};
+
+	void ProcessQuitInput(Game& game, sf::Event& event)
+	{
+		if (event.type == sf::Event::KeyPressed)
 		{
-			text += std::to_string(i + 1) + ". "
-				+ sorted[i].name
-				+ " ......... "
-				+ std::to_string(sorted[i].score) + "\n";
-		}
-		text += "=======================";
+			if (event.key.code == sf::Keyboard::Left || event.key.code == sf::Keyboard::A)
+			{
+				game.selectedQuitItem = 0; // YES
+			}
+			else if (event.key.code == sf::Keyboard::Right || event.key.code == sf::Keyboard::D)
+			{
+				game.selectedQuitItem = 1; // no
+			}
 
-		game.leaderboardText.setFont(game.font);
-		game.leaderboardText.setString(text);
-		game.leaderboardText.setCharacterSize(26);
-		game.leaderboardText.setFillColor(sf::Color::White);
-		game.leaderboardText.setPosition(SCREEN_WIDTH / 2.f - 200.f, 80.f);
+			if (event.key.code == sf::Keyboard::Enter)
+			{
+				if (game.selectedQuitItem == 0)
+				{
+					event.type = sf::Event::Closed;
+				}
+				else
+				{
+					game.state = GameState::Menu;
+					GameMenu(game);
+					game.selectedQuitItem = 0;
+					return;
+				}
+			}
+		}
 	};
 
 	void DrawGame(Game& game, sf::RenderWindow& window)
@@ -528,8 +562,21 @@ namespace ApplesGame
 
 		if (game.state == GameState::Leaderboard)
 		{
-			window.draw(game.leaderboardTitle);
-			window.draw(game.leaderboardText);
+			window.draw(game.leaderboard.leaderboardTitle);
+			window.draw(game.leaderboard.leaderboardText);
+			return;
+		}
+
+		if (game.state == GameState::Esc)
+		{
+			window.draw(game.escText);
+			for (int i = 0; i < 2; ++i)
+			{
+				bool selected = (i == game.selectedQuitItem);
+				game.escItems[i].setFillColor(selected ? sf::Color::Yellow : sf::Color::White);
+
+				window.draw(game.escItems[i]);
+			}
 			return;
 		}
 
@@ -541,7 +588,6 @@ namespace ApplesGame
 			{
 				window.draw(game.menuItems[i]);
 			}
-			window.draw(game.menuText);
 
 			const uint32_t bits[4] = {
 				static_cast<uint32_t>(GameSettingsBits::IsGameWithAcceleration),
@@ -574,3 +620,4 @@ namespace ApplesGame
 	}
 
 }
+
