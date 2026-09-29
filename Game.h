@@ -5,7 +5,9 @@
 #include "Player.h"
 #include "Apple.h"
 #include "Stone.h"
+#include "Leaderboard.h"
 #include <vector>
+#include <map>
 
 namespace ApplesGame
 {
@@ -15,7 +17,8 @@ namespace ApplesGame
 		Playing,
 		GameOver,
 		Victory,
-		Leaderboard
+		Leaderboard,
+		Esc
 	};
 
 	enum class GameSettingsBits
@@ -24,12 +27,6 @@ namespace ApplesGame
 		IsGameWithAcceleration = 1 << 1,
 		IsHardcoreMode = 1 << 2,
 		IsZenMode = 1 << 3,
-	};
-
-	struct Record
-	{
-		std::string name;
-		int score;
 	};
 
 	struct Game
@@ -42,22 +39,21 @@ namespace ApplesGame
 
 		uint32_t gameMode = 0;
 
-		sf::Text leaderboardTitle;
-		sf::Text leaderboardText;
-		std::map<std::string, int> leaderboard = {
-			{"Mark",  120},
-			{"Bob",    89},
-			{"Carol",  67},
-			{"Dave",   52},
-			{"Alice",  42}
-		};
+		Leaderboard leaderboard;
+
+		sf::Text escItems[2];
+		sf::Text escText;
+		std::vector<std::string> escOptions;
+		int selectedQuitItem = 0;
 
 		//Global game data
 		int numEatenApples = 0;
-		bool isGameFinished = false;
+		//bool isGameFinished = false;
 		bool isGameWon = false;
 		float timeSinceGameFinished = 0.f;
 		sf::RectangleShape background;
+
+		std::vector<GameState> gameStateStack;
 
 		int numApples;
 		int numStones;
@@ -87,7 +83,10 @@ namespace ApplesGame
 	void ProcessMenuInput(Game& game, sf::Event& event);
 	void SetGameMode(Game& game, uint32_t flags);
 
-	void GameLeaderboard(Game& game);
+	void GameStateLeaderboard(Game& game);
+
+	void DoYouWannaEsc(Game& game, sf::Event& event);
+	void ProcessQuitInput(Game& game, sf::Event& event);
 
 	void InitGame(Game& game);
 	void UpdateGame(Game& game, float deltaTime);
